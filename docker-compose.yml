@@ -1,0 +1,55 @@
+# Mi Negocio AVEMARÍA — Multi-layer Docker Compose
+# Backend (Node/Express) + Frontend (Vite build served by nginx)
+
+services:
+  # ── Database (PostgreSQL) ──
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: avemaria
+      POSTGRES_PASSWORD: avemaria_secret
+      POSTGRES_DB: avemaria
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U avemaria" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ──
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://avemaria:avemaria_secret@db:5432/avemaria?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+
+  # ── Web Frontend (nginx) ──
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

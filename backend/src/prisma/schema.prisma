@@ -1,0 +1,181 @@
+// Mi Negocio AVEMARÍA — Prisma Schema
+// Base de datos PostgreSQL para gestión de distribuidora de accesorios
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── MODELOS ──
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  businessName String        @default("Mi Negocio AVEMARÍA")
+  createdAt    DateTime      @default(now())
+  sales        Sale[]
+  purchases    Purchase[]
+  transactions Transaction[]
+}
+
+// Producto que la distribuidora tiene en su inventario
+model Product {
+  id             String         @id @default(uuid())
+  ref            String         @unique // Ej: AVM-0042
+  name           String // Candongas Luna y Sol
+  category       Category
+  icon           String? // emoji representativo
+  wholesalePrice Decimal        @db.Decimal(12, 2) // precio mayorista (lo que paga a AVEMARÍA)
+  retailPrice    Decimal        @db.Decimal(12, 2) // precio al que lo vende la distribuidora
+  stock          Int            @default(0)
+  minStock       Int            @default(10)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  purchaseItems  PurchaseItem[]
+  saleItems      SaleItem[]
+}
+
+// Pedido que la distribuidora le hace a AVEMARÍA
+model Purchase {
+  id            String          @id @default(uuid())
+  orderNumber   String? // número de pedido AVEMARÍA
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  items         PurchaseItem[]
+  shippingCost  Decimal         @db.Decimal(12, 2) @default(0)
+  totalCost     Decimal         @db.Decimal(12, 2)
+  paymentMethod PurchasePayment
+  notes         String?
+  purchasedAt   DateTime        @default(now())
+  transaction   Transaction?
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitCost   Decimal  @db.Decimal(12, 2)
+}
+
+// Venta de la distribuidora a una clienta
+model Sale {
+  id            String      @id @default(uuid())
+  folio         Int         @default(autoincrement())
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  items         SaleItem[]
+  channel       SaleChannel // WHATSAPP | INSTAGRAM | PRESENCIAL
+  paymentMethod SalePayment
+  totalRevenue  Decimal     @db.Decimal(12, 2) // lo que cobró
+  totalCost     Decimal     @db.Decimal(12, 2) // costo de los productos vendidos
+  netProfit     Decimal     @db.Decimal(12, 2) // ganancia neta
+  status        SaleStatus  @default(COMPLETED)
+  notes         String?
+  soldAt        DateTime    @default(now())
+  transaction   Transaction?
+}
+
+model SaleItem {
+  id          String  @id @default(uuid())
+  saleId      String
+  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitRevenue Decimal @db.Decimal(12, 2) // precio al que vendió c/u
+  unitCost    Decimal @db.Decimal(12, 2) // costo mayorista c/u
+  unitProfit  Decimal @db.Decimal(12, 2) // ganancia por unidad
+}
+
+// Clientas de la distribuidora (Instagram / WhatsApp)
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String? // número de WhatsApp
+  instagram String? // @usuario de Instagram
+  notes     String?
+  createdAt DateTime @default(now())
+  sales     Sale[]
+}
+
+// Registro contable de cada movimiento de dinero
+model Transaction {
+  id          String          @id @default(uuid())
+  type        TransactionType // INCOME | EXPENSE
+  amount      Decimal         @db.Decimal(12, 2)
+  category    ExpenseCategory
+  description String
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  saleId      String?         @unique
+  sale        Sale?           @relation(fields: [saleId], references: [id])
+  purchaseId  String?         @unique
+  purchase    Purchase?       @relation(fields: [purchaseId], references: [id])
+  date        DateTime        @default(now())
+}
+
+// ── ENUMS ──
+
+enum Category {
+  CANDONGAS
+  TOPOS
+  GRANDES
+  SETS
+  EARCUFFS
+  COLLARES
+  PULSERAS
+  OTRO
+}
+
+enum SaleChannel {
+  WHATSAPP
+  INSTAGRAM
+  PRESENCIAL
+}
+
+enum SalePayment {
+  NEQUI
+  DAVIPLATA
+  TRANSFERENCIA
+  EFECTIVO
+  CONTRA_ENTREGA
+}
+
+enum PurchasePayment {
+  TRANSFERENCIA
+  NEQUI
+  DAVIPLATA
+  EFECTIVO
+}
+
+enum SaleStatus {
+  COMPLETED
+  PENDING_PAYMENT
+  CANCELLED
+}
+
+enum TransactionType {
+  INCOME  // venta
+  EXPENSE // compra a AVEMARÍA, envío, empaque, etc.
+}
+
+enum ExpenseCategory {
+  COMPRA_AVEMARIA
+  ENVIOS
+  EMPAQUES
+  PUBLICIDAD
+  OTRO
+}

@@ -1,0 +1,26 @@
+{
+    "expo": {
+        "name": "Mi Negocio AVEMARÍA",
+        "slug": "mi-negocio-avemaria",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "backgroundColor": "#FAF8F4"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.minegocio.avemaria"
+        },
+        "android": {
+            "adaptiveIcon": {
+                "backgroundColor": "#FAF8F4"
+            },
+            "package": "com.minegocio.avemaria"
+        }
+    }
+}

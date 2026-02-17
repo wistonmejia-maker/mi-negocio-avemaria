@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ── Paleta AVEMARÍA ── */
+  --cream: #FAF8F4;
+  --cream2: #F2EDE4;
+  --white: #FFFFFF;
+  --gold: #C8A96E;
+  --gold2: #A8884A;
+  --gold3: #E8D5A8;
+  --gold-bg: #FBF6EE;
+  --ink: #1A1714;
+  --ink2: #3D3830;
+  --ink3: #7A7268;
+  --ink4: #B0A898;
+  --border: #EDE8DF;
+  --green: #1E6B42;
+  --green2: #2A9E5E;
+  --green-bg: #EEF7F2;
+  --red: #8B2222;
+  --red2: #C0392B;
+  --red-bg: #FBF0F0;
+  --ig: #E1306C;
+  --wa: #25D366;
+
+  /* Aliases used in components */
+  --crema: var(--cream);
+  --crema-hover: var(--cream2);
+  --blanco: var(--white);
+  --dorado: var(--gold);
+  --negro: var(--ink);
+  --gris: var(--ink3);
+
+  /* Fonts */
+  --font-serif: 'Cormorant', serif;
+  --font-sans: 'Jost', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+/* ── Reset + Base ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  line-height: 1.2;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}

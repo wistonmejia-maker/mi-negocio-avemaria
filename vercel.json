@@ -1,0 +1,45 @@
+{
+    "buildCommand": "npm run build --workspace=apps/web && cd backend && npx prisma generate",
+    "outputDirectory": "apps/web/dist",
+    "installCommand": "npm install",
+    "framework": null,
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/api"
+        },
+        {
+            "source": "/((?!api/).*)",
+            "destination": "/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                {
+                    "key": "Access-Control-Allow-Credentials",
+                    "value": "true"
+                },
+                {
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "Access-Control-Allow-Methods",
+                    "value": "GET,POST,PATCH,PUT,DELETE,OPTIONS"
+                },
+                {
+                    "key": "Access-Control-Allow-Headers",
+                    "value": "Content-Type,Authorization"
+                }
+            ]
+        }
+    ],
+    "functions": {
+        "api/index.ts": {
+            "memory": 1024,
+            "maxDuration": 30
+        }
+    }
+}
