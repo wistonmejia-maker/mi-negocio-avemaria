@@ -3,22 +3,35 @@
 
 import { PrismaClient, Category, SaleChannel, SalePayment, PurchasePayment, TransactionType, ExpenseCategory, SaleStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { subDays, subMonths, addDays } from 'date-fns';
+import { subDays, subMonths } from 'date-fns';
 
 const prisma = new PrismaClient();
 
 async function main() {
     console.log('🌱 Sembrando datos de prueba...');
 
-    // ── Limpiar datos existentes ──
-    await prisma.transaction.deleteMany();
-    await prisma.saleItem.deleteMany();
-    await prisma.sale.deleteMany();
-    await prisma.purchaseItem.deleteMany();
-    await prisma.purchase.deleteMany();
-    await prisma.customer.deleteMany();
-    await prisma.product.deleteMany();
-    await prisma.user.deleteMany();
+    // ── Seguridad: No borrar datos si no se especifica explícitamente ──
+    const forceSeed = process.env.FORCE_SEED === 'true';
+    const existingUsers = await prisma.user.count();
+
+    if (existingUsers > 0 && !forceSeed) {
+        console.log('⚠️ La base de datos ya tiene datos. Saltando el seed por seguridad.');
+        console.log('💡 Para forzar el seed y borrarlo todo, usa: FORCE_SEED=true npm run prisma:seed');
+        return;
+    }
+
+    if (forceSeed) {
+        console.log('🧨 FORCE_SEED detectado. Borrando datos existentes...');
+        // ── Limpiar datos existentes (Solo si se fuerza) ──
+        await prisma.transaction.deleteMany();
+        await prisma.saleItem.deleteMany();
+        await prisma.sale.deleteMany();
+        await prisma.purchaseItem.deleteMany();
+        await prisma.purchase.deleteMany();
+        await prisma.customer.deleteMany();
+        await prisma.product.deleteMany();
+        await prisma.user.deleteMany();
+    }
 
     // ── 1. Usuario ──
     const passwordHash = await bcrypt.hash('Avemaria123!', 12);
@@ -156,8 +169,7 @@ async function main() {
     console.log('✅ 2 compras a AVEMARÍA creadas');
 
     // ── 5. Ventas (30 ventas distribuidas en los últimos 2 meses) ──
-    const channels: SaleChannel[] = [SaleChannel.WHATSAPP, SaleChannel.INSTAGRAM, SaleChannel.PRESENCIAL];
-    const payments: SalePayment[] = [SalePayment.NEQUI, SalePayment.DAVIPLATA, SalePayment.TRANSFERENCIA, SalePayment.EFECTIVO, SalePayment.CONTRA_ENTREGA];
+    // ── 5. Ventas (30 ventas distribuidas en los últimos 2 meses) ──
 
     const salesData: Array<{
         daysAgo: number;
