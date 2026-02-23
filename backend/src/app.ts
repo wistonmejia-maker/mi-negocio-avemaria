@@ -41,7 +41,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 5,
+    max: 15,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, error: 'Demasiados intentos de login, espera un minuto' },

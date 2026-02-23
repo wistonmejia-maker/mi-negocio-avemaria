@@ -14,15 +14,25 @@ datasource db {
 // ── MODELOS ──
 
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
+  id           String         @id @default(uuid())
+  email        String         @unique
   passwordHash String
   name         String
-  businessName String        @default("Mi Negocio AVEMARÍA")
-  createdAt    DateTime      @default(now())
+  businessName String         @default("Mi Negocio AVEMARÍA")
+  createdAt    DateTime       @default(now())
   sales        Sale[]
   purchases    Purchase[]
   transactions Transaction[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 // Producto que la distribuidora tiene en su inventario

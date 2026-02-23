@@ -12,27 +12,36 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'default-refresh-se
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
-// DECISIÓN: Refresh tokens se almacenan en memoria (Map) para esta versión.
-// En producción, se usaría Redis o una tabla en BD.
-const refreshTokenStore = new Map<string, string>(); // token -> userId
+// DECISIÓN: Los refresh tokens AHORA se almacenan en la base de datos para persistencia en Vercel.
+// Esto evita que se pierda la sesión cuando las funciones serverless se reciclan.
 
-function generateTokens(userId: string, email: string) {
+async function generateTokens(userId: string, email: string) {
     const accessToken = jwt.sign(
         { id: userId, email },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN },
     );
 
-    const refreshToken = jwt.sign(
+    const refreshTokenString = jwt.sign(
         { id: userId, email },
         JWT_REFRESH_SECRET,
         { expiresIn: JWT_REFRESH_EXPIRES_IN },
     );
 
-    // Guardar refresh token
-    refreshTokenStore.set(refreshToken, userId);
+    // Calcular fecha de expiración para la BD (7 días por defecto)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    return { accessToken, refreshToken };
+    // Guardar refresh token en la BD
+    await prisma.refreshToken.create({
+        data: {
+            token: refreshTokenString,
+            userId,
+            expiresAt,
+        },
+    });
+
+    return { accessToken, refreshToken: refreshTokenString };
 }
 
 function sanitizeUser(user: { id: string; email: string; name: string; businessName: string; createdAt: Date }) {
@@ -62,7 +71,7 @@ export async function registerUser(input: RegisterInput) {
         },
     });
 
-    const tokens = generateTokens(user.id, user.email);
+    const tokens = await generateTokens(user.id, user.email);
 
     return {
         user: sanitizeUser(user),
@@ -81,7 +90,7 @@ export async function loginUser(input: LoginInput) {
         throw new UnauthorizedError('Email o contraseña incorrectos');
     }
 
-    const tokens = generateTokens(user.id, user.email);
+    const tokens = await generateTokens(user.id, user.email);
 
     return {
         user: sanitizeUser(user),
@@ -90,8 +99,15 @@ export async function loginUser(input: LoginInput) {
 }
 
 export async function refreshAccessToken(refreshToken: string) {
-    const storedUserId = refreshTokenStore.get(refreshToken);
-    if (!storedUserId) {
+    // Buscar el token en la base de datos
+    const dbToken = await prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+    });
+
+    if (!dbToken || dbToken.expiresAt < new Date()) {
+        if (dbToken) {
+            await prisma.refreshToken.delete({ where: { id: dbToken.id } });
+        }
         throw new UnauthorizedError('Refresh token inválido o expirado');
     }
 
@@ -106,13 +122,15 @@ export async function refreshAccessToken(refreshToken: string) {
 
         return { accessToken };
     } catch {
-        refreshTokenStore.delete(refreshToken);
+        await prisma.refreshToken.delete({ where: { id: dbToken.id } });
         throw new UnauthorizedError('Refresh token inválido o expirado');
     }
 }
 
 export async function logoutUser(refreshToken: string) {
-    refreshTokenStore.delete(refreshToken);
+    await prisma.refreshToken.deleteMany({
+        where: { token: refreshToken },
+    });
 }
 
 export async function getProfile(userId: string) {

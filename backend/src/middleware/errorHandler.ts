@@ -72,7 +72,14 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     }
 
     // Unknown errors
-    console.error('❌ Error no manejado:', err);
+    console.error('❌ Error no manejado en la API:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        path: _req.path,
+        method: _req.method,
+    });
+
     res.status(500).json({
         success: false,
         error: process.env.NODE_ENV === 'production'
